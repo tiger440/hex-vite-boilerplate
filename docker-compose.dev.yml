@@ -1,0 +1,59 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: hex-vite-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_DATABASE_MODE=memory
+    command: npm run dev
+    stdin_open: true
+    tty: true
+    networks:
+      - hex-network
+
+  # Optional: Add Supabase local development
+  supabase:
+    image: supabase/postgres:15.1.0.117
+    container_name: hex-supabase-dev
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your-super-secret-jwt-token-with-at-least-32-characters-long
+      POSTGRES_DB: postgres
+    volumes:
+      - supabase_db_data:/var/lib/postgresql/data
+    networks:
+      - hex-network
+    profiles:
+      - with-db
+
+  # Supabase Studio for database management
+  supabase-studio:
+    image: supabase/studio:20240101-ce42139
+    container_name: hex-supabase-studio
+    ports:
+      - "3000:3000"
+    environment:
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+    depends_on:
+      - supabase
+    networks:
+      - hex-network
+    profiles:
+      - with-db
+
+volumes:
+  supabase_db_data:
+
+networks:
+  hex-network:
+    driver: bridge
